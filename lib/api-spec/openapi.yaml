@@ -1,0 +1,662 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: CyberLab learning platform API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: auth
+  - name: dashboard
+  - name: labs
+  - name: commands
+  - name: learning
+  - name: progress
+  - name: achievements
+  - name: admin
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the current signed-in user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get the student dashboard
+      responses:
+        "200":
+          description: Student dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /labs:
+    get:
+      operationId: listLabs
+      tags: [labs]
+      summary: List published labs
+      parameters:
+        - $ref: "#/components/parameters/Search"
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: difficulty
+          in: query
+          schema:
+            $ref: "#/components/schemas/Difficulty"
+      responses:
+        "200":
+          description: Published labs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lab"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createLab
+      tags: [admin]
+      summary: Create a lab
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LabInput"
+      responses:
+        "201":
+          description: Created lab
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lab"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /labs/{id}:
+    get:
+      operationId: getLab
+      tags: [labs]
+      summary: Get lab details
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Lab details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateLab
+      tags: [admin]
+      summary: Update a lab
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LabUpdate"
+      responses:
+        "200":
+          description: Updated lab
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lab"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteLab
+      tags: [admin]
+      summary: Delete a lab
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /labs/{id}/start:
+    post:
+      operationId: startLab
+      tags: [labs]
+      summary: Start a lab instance
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "201":
+          description: Lab instance created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabInstance"
+        "409":
+          description: Docker integration unavailable or lab already active
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /labs/{id}/submit-flag:
+    post:
+      operationId: submitFlag
+      tags: [labs]
+      summary: Submit a flag for a lab
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlagSubmission"
+      responses:
+        "200":
+          description: Flag result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlagResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /commands:
+    get:
+      operationId: listCommands
+      tags: [commands]
+      summary: List command library entries
+      parameters:
+        - $ref: "#/components/parameters/Search"
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: difficulty
+          in: query
+          schema:
+            $ref: "#/components/schemas/Difficulty"
+      responses:
+        "200":
+          description: Commands
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Command"
+  /commands/{id}:
+    get:
+      operationId: getCommand
+      tags: [commands]
+      summary: Get a command
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Command details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Command"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /learning:
+    get:
+      operationId: listLearningModules
+      tags: [learning]
+      summary: List learning modules
+      responses:
+        "200":
+          description: Learning modules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LearningModule"
+  /learning/{id}:
+    get:
+      operationId: getLearningModule
+      tags: [learning]
+      summary: Get a learning module
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Learning module
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningModuleDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /progress:
+    get:
+      operationId: getProgress
+      tags: [progress]
+      summary: Get current user progress
+      responses:
+        "200":
+          description: Progress summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /achievements:
+    get:
+      operationId: listAchievements
+      tags: [achievements]
+      summary: List achievements
+      responses:
+        "200":
+          description: Achievements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Achievement"
+  /admin/overview:
+    get:
+      operationId: getAdminOverview
+      tags: [admin]
+      summary: Get admin overview
+      responses:
+        "200":
+          description: Admin overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/users:
+    get:
+      operationId: listUsers
+      tags: [admin]
+      summary: List users for administration
+      parameters:
+        - $ref: "#/components/parameters/Search"
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/lab-instances:
+    get:
+      operationId: listLabInstances
+      tags: [admin]
+      summary: List lab instances
+      responses:
+        "200":
+          description: Lab instances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LabInstance"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    Search:
+      name: search
+      in: query
+      schema: { type: string }
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Administrator access required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+    Difficulty:
+      type: string
+      enum: [Easy, Medium, Hard]
+    LabStatus:
+      type: string
+      enum: [Draft, Published, Disabled]
+    UserRole:
+      type: string
+      enum: [student, admin]
+    User:
+      type: object
+      required: [id, name, email, role, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        role:
+          $ref: "#/components/schemas/UserRole"
+        avatar: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        lastActiveAt: { type: ["string", "null"], format: date-time }
+    Category:
+      type: object
+      required: [id, name, slug, labCount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        labCount: { type: integer }
+        color: { type: string }
+    Lab:
+      type: object
+      required: [id, name, slug, description, category, difficulty, estimatedMinutes, status, progress]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        category:
+          $ref: "#/components/schemas/Category"
+        difficulty:
+          $ref: "#/components/schemas/Difficulty"
+        estimatedMinutes: { type: integer }
+        status:
+          $ref: "#/components/schemas/LabStatus"
+        progress: { type: integer }
+        completed: { type: boolean }
+        objectiveCount: { type: integer }
+        instanceStatus: { type: ["string", "null"] }
+        accent: { type: string }
+    LabDetail:
+      allOf:
+        - $ref: "#/components/schemas/Lab"
+        - type: object
+          required: [objectives, instructions, hints, requirements, docker]
+          properties:
+            objectives:
+              type: array
+              items: { type: string }
+            instructions: { type: string }
+            hints:
+              type: array
+              items: { type: string }
+            requirements:
+              type: array
+              items: { type: string }
+            docker:
+              $ref: "#/components/schemas/DockerConfig"
+    LabInput:
+      type: object
+      required: [name, description, categoryId, difficulty, estimatedMinutes, instructions]
+      properties:
+        name: { type: string, minLength: 1 }
+        description: { type: string }
+        categoryId: { type: string }
+        difficulty:
+          $ref: "#/components/schemas/Difficulty"
+        estimatedMinutes: { type: integer, minimum: 1 }
+        instructions: { type: string }
+        objectives:
+          type: array
+          items: { type: string }
+        hints:
+          type: array
+          items: { type: string }
+        docker:
+          $ref: "#/components/schemas/DockerConfig"
+    LabUpdate:
+      allOf:
+        - $ref: "#/components/schemas/LabInput"
+    DockerConfig:
+      type: object
+      required: [image, tag, targetPort, protocol, timeoutMinutes, configured]
+      properties:
+        image: { type: ["string", "null"] }
+        tag: { type: ["string", "null"] }
+        targetPort: { type: ["integer", "null"] }
+        protocol: { type: string }
+        network: { type: ["string", "null"] }
+        timeoutMinutes: { type: integer }
+        configured: { type: boolean }
+    LabInstance:
+      type: object
+      required: [id, labId, labName, userId, status, startedAt, durationMinutes, dockerConfigured]
+      properties:
+        id: { type: string }
+        labId: { type: string }
+        labName: { type: string }
+        userId: { type: string }
+        status:
+          type: string
+          enum: [pending, running, stopped, completed, failed]
+        startedAt: { type: string, format: date-time }
+        durationMinutes: { type: integer }
+        dockerConfigured: { type: boolean }
+        containerReference: { type: ["string", "null"] }
+    FlagSubmission:
+      type: object
+      required: [value]
+      properties:
+        value: { type: string, minLength: 1 }
+    FlagResult:
+      type: object
+      required: [correct, message, attemptCount]
+      properties:
+        correct: { type: boolean }
+        message: { type: string }
+        attemptCount: { type: integer }
+        completedAt: { type: ["string", "null"], format: date-time }
+    Command:
+      type: object
+      required: [id, name, tool, category, operatingSystem, difficulty, command, description, options, example, relatedLabs]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        tool: { type: string }
+        category: { type: string }
+        operatingSystem: { type: string }
+        difficulty:
+          $ref: "#/components/schemas/Difficulty"
+        command: { type: string }
+        description: { type: string }
+        options:
+          type: array
+          items:
+            type: object
+            required: [flag, description]
+            properties:
+              flag: { type: string }
+              description: { type: string }
+        example: { type: string }
+        relatedLabs:
+          type: array
+          items: { type: string }
+    Lesson:
+      type: object
+      required: [id, title, durationMinutes, completed, position]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        durationMinutes: { type: integer }
+        completed: { type: boolean }
+        position: { type: integer }
+    LearningModule:
+      type: object
+      required: [id, title, description, category, lessonCount, completedLessons, progress, level, accent]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        category: { type: string }
+        lessonCount: { type: integer }
+        completedLessons: { type: integer }
+        progress: { type: integer }
+        level: { type: string }
+        accent: { type: string }
+    LearningModuleDetail:
+      allOf:
+        - $ref: "#/components/schemas/LearningModule"
+        - type: object
+          required: [lessons]
+          properties:
+            lessons:
+              type: array
+              items:
+                $ref: "#/components/schemas/Lesson"
+    ProgressSummary:
+      type: object
+      required: [overallProgress, labsStarted, labsCompleted, commandsLearned, currentStreak, categoryProgress]
+      properties:
+        overallProgress: { type: integer }
+        labsStarted: { type: integer }
+        labsCompleted: { type: integer }
+        commandsLearned: { type: integer }
+        currentStreak: { type: integer }
+        categoryProgress:
+          type: array
+          items:
+            type: object
+            required: [category, progress, completed, total]
+            properties:
+              category: { type: string }
+              progress: { type: integer }
+              completed: { type: integer }
+              total: { type: integer }
+    Achievement:
+      type: object
+      required: [id, name, description, icon, unlocked, progress, target]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        icon: { type: string }
+        unlocked: { type: boolean }
+        progress: { type: integer }
+        target: { type: integer }
+    Dashboard:
+      type: object
+      required: [user, stats, continueLearning, recommendedLabs, recentActivity]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        stats:
+          type: object
+          required: [labsCompleted, labsAvailable, currentStreak, commandsLearned, overallProgress]
+          properties:
+            labsCompleted: { type: integer }
+            labsAvailable: { type: integer }
+            currentStreak: { type: integer }
+            commandsLearned: { type: integer }
+            overallProgress: { type: integer }
+        continueLearning:
+          $ref: "#/components/schemas/LearningModule"
+        recommendedLabs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Lab"
+        recentActivity:
+          type: array
+          items:
+            type: object
+            required: [id, type, title, description, timestamp]
+            properties:
+              id: { type: string }
+              type: { type: string }
+              title: { type: string }
+              description: { type: string }
+              timestamp: { type: string, format: date-time }
+    AdminOverview:
+      type: object
+      required: [totalUsers, activeUsers, totalLabs, publishedLabs, runningInstances, labsCompleted, flagSubmissions, dockerConnected, recentActivity]
+      properties:
+        totalUsers: { type: integer }
+        activeUsers: { type: integer }
+        totalLabs: { type: integer }
+        publishedLabs: { type: integer }
+        runningInstances: { type: integer }
+        labsCompleted: { type: integer }
+        flagSubmissions: { type: integer }
+        dockerConnected: { type: boolean }
+        recentActivity:
+          type: array
+          items:
+            type: object
+            required: [id, title, detail, timestamp]
+            properties:
+              id: { type: string }
+              title: { type: string }
+              detail: { type: string }
+              timestamp: { type: string, format: date-time }
