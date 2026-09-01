@@ -1,0 +1,12 @@
+{
+  "framework": "vite",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "PORT=20421 BASE_PATH=/ pnpm --filter @workspace/cyberlab run build",
+  "outputDirectory": "artifacts/cyberlab/dist/public",
+  "rewrites": [
+    {
+      "source": "/((?!.*\\.).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
